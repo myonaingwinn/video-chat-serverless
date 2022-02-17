@@ -96,7 +96,6 @@ const leaveRoom = () => {
     }
   }
 
-  localParticipant.removeChild(localParticipant.lastElementChild);
   joinRoomButton.disabled = false;
   leaveRoomButton.disabled = true;
   identityInput.disabled = false;

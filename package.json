@@ -1,5 +1,5 @@
 {
-  "name": "video-chat",
+  "name": "video-chat-serverless",
   "version": "0.0.0",
   "private": true,
   "scripts": {

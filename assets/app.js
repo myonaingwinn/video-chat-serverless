@@ -1,6 +1,7 @@
 const video = document.getElementById('video');
 const gallery = document.getElementById('gallery');
 const identityInput = document.getElementById('identity');
+const statusDiv = document.getElementById('status-message');
 
 // buttons
 const joinRoomButton = document.getElementById('button-join');
@@ -12,8 +13,7 @@ let videoRoom;
 const addLocalVideo = async () =>  {
   const videoTrack = await Twilio.Video.createLocalVideoTrack();
   const localVideoDiv = document.createElement('div');
-  localVideoDiv.setAttribute('id', 'localParticipant');
-  localVideoDiv.setAttribute('class', 'participant');
+  localVideoDiv.classList.add('participant', 'localParticipant');
 
   const trackElement = videoTrack.attach();
   localVideoDiv.appendChild(trackElement);
@@ -51,11 +51,14 @@ const joinRoom = async (event) => {
 
     console.log(`You are now connected to Room ${videoRoom.name}`);
 
-    const localParticipant = document.getElementById('localParticipant');
+    const localParticipantDiv = document.getElementsByClassName('localParticipant participant')[0];
+    localParticipantDiv.setAttribute('data-sid', videoRoom.localParticipant.sid);
+
     const identityDiv = document.createElement('div');
-    identityDiv.setAttribute('class', 'identity');
+    identityDiv.classList.add('identity');
     identityDiv.innerHTML = identity;
-    localParticipant.appendChild(identityDiv);
+
+    localParticipantDiv.appendChild(identityDiv);
     leaveRoomButton.disabled = false;
 
     videoRoom.participants.forEach(participantConnected);
@@ -67,20 +70,32 @@ const joinRoom = async (event) => {
   }
 }
 
-const leaveRoom = (event) => {
-  event.preventDefault();
-  videoRoom.disconnect();
-  console.log(`You are now disconnected from Room ${videoRoom.name}`);
+const leaveRoom = () => {
+  if (videoRoom.localParticipant.state === 'connected') {
+    videoRoom.disconnect();
+  }
 
+  statusDiv.innerText = `You are now disconnected from Room ${videoRoom.name}`;
+  setTimeout(() => { statusDiv.innerText = ''}, 5000);
+
+  // List all the participants
   let removeParticipants = gallery.getElementsByClassName('participant');
 
+  // For remote participants, remove their entire div from the UI.
+  // For the local participant, just remove their identity label from the UI
+  // and return the UI back to how it looked before joining the call.
   for (participant of removeParticipants) {
-    if (participant.id !== 'localParticipant') {
+    if (!participant.classList.contains('localParticipant')) {
       gallery.removeChild(participant);
+    } else {
+      const localParticipantDiv = document.getElementsByClassName('localParticipant participant')[0];
+      const identity = localParticipantDiv.getElementsByClassName('identity');
+      if (identity.length) {
+        identity[0].remove();
+      }
     }
   }
 
-  localParticipant.removeChild(localParticipant.lastElementChild);
   joinRoomButton.disabled = false;
   leaveRoomButton.disabled = true;
   identityInput.disabled = false;
@@ -91,14 +106,14 @@ const participantConnected = (participant) => {
 
   // Add their video and audio to the gallery
   const participantDiv = document.createElement('div');
-  participantDiv.setAttribute('id', participant.sid);
-  participantDiv.setAttribute('class', 'participant');
+  participantDiv.setAttribute('data-sid', participant.sid);
+  participantDiv.classList.add('participant');
 
   const tracksDiv = document.createElement('div');
   participantDiv.appendChild(tracksDiv);
 
   const identityDiv = document.createElement('div');
-  identityDiv.setAttribute('class', 'identity');
+  identityDiv.classList.add('identity');
   identityDiv.innerHTML = participant.identity;
   participantDiv.appendChild(identityDiv);
 
@@ -120,8 +135,8 @@ const participantConnected = (participant) => {
 };
 
 const participantDisconnected = (participant) => {
-  console.log(`${participant.identity} has left the call.`);
-  document.getElementById(participant.sid).remove();
+  const participants = Array.from(document.getElementsByClassName('participant'));
+  participants.find(div => div.dataset.sid === participant.sid).remove();
 };
 
 // Show the participant a preview of their video

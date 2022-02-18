@@ -76,3 +76,12 @@ button:hover, button:active, button:disabled {
     align-items: stretch;
   }
 }
+
+#status {
+  align-items: center;
+}
+
+#status-message {
+  text-align: center;
+  color: rgb(225, 73, 73);
+}

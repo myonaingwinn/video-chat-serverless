@@ -6,8 +6,7 @@
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <title>Video Chat</title>
     <link rel='stylesheet' type='text/css' href='styles.css'/>
-    <script defer src='https://sdk.twilio.com/js/video/releases/2.18.3/twilio-video.min.js'></script>
-
+    <script defer src='https://sdk.twilio.com/js/video/releases/2.20.0/twilio-video.min.js'></script>
     <script defer src='app.js' type='text/javascript'></script>
   </head>
   <body>
@@ -17,6 +16,10 @@
         <input type='text' id='identity' placeholder='Enter your name' required>
         <button id='button-join'>Join Room</button>
         <button id='button-leave' disabled>Leave Room</button>
+    </section>
+
+    <section id='status'>
+      <div id='status-message'></div>
     </section>
 
   </body>

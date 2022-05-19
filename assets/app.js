@@ -2,15 +2,18 @@ const video = document.getElementById('video');
 const gallery = document.getElementById('gallery');
 const identityInput = document.getElementById('identity');
 const statusDiv = document.getElementById('status-message');
+const hostPanel = document.querySelector('.host-panel');
 
 // buttons
 const joinRoomButton = document.getElementById('button-join');
 const leaveRoomButton = document.getElementById('button-leave');
+const toggleButton = document.getElementById('button-panel-toggle');
+const closePanelButton = document.getElementById('button-panel-close');
 
 const ROOM_NAME = 'my-video-chat';
 let videoRoom;
 
-const addLocalVideo = async () =>  {
+const addLocalVideo = async () => {
   const videoTrack = await Twilio.Video.createLocalVideoTrack();
   const localVideoDiv = document.createElement('div');
   localVideoDiv.classList.add('participant', 'localParticipant');
@@ -24,8 +27,16 @@ const addLocalVideo = async () =>  {
 const joinRoom = async (event) => {
   event.preventDefault();
   const identity = identityInput.value;
-  identityInput.disabled = true;
+  // identityInput.disabled = true;
+  identityInput.disabled = false;
   joinRoomButton.disabled = true;
+  toggleButton.disabled = true;
+  leaveRoomButton.disabled = true;
+
+  // Close the host panel if the local participant leaves the call
+  if (hostPanel.classList.contains('open')) {
+    hostPanel.classList.toggle('open');
+  }
 
   try {
     const response = await fetch('/token', {
@@ -60,10 +71,14 @@ const joinRoom = async (event) => {
 
     localParticipantDiv.appendChild(identityDiv);
     leaveRoomButton.disabled = false;
+    toggleButton.disabled = false;
 
     videoRoom.participants.forEach(participantConnected);
     videoRoom.on('participantConnected', participantConnected);
     videoRoom.on('participantDisconnected', participantDisconnected);
+
+    // If the localParticipant is the one who has been removed, reset their UI to a non-joined state
+    videoRoom.localParticipant.on('disconnected', leaveRoom);
 
   } catch (error) {
     console.log(error);
@@ -76,7 +91,7 @@ const leaveRoom = () => {
   }
 
   statusDiv.innerText = `You are now disconnected from Room ${videoRoom.name}`;
-  setTimeout(() => { statusDiv.innerText = ''}, 5000);
+  setTimeout(() => { statusDiv.innerText = '' }, 5000);
 
   // List all the participants
   let removeParticipants = gallery.getElementsByClassName('participant');
@@ -98,6 +113,7 @@ const leaveRoom = () => {
 
   joinRoomButton.disabled = false;
   leaveRoomButton.disabled = true;
+  toggleButton.disabled = true;
   identityInput.disabled = false;
 }
 
@@ -145,3 +161,67 @@ addLocalVideo();
 // Event listeners
 joinRoomButton.addEventListener('click', joinRoom);
 leaveRoomButton.addEventListener('click', leaveRoom);
+
+toggleButton.addEventListener('click', () => {
+  hostPanel.classList.toggle('open');
+  hostPanel.classList.contains('open') ? openHostPanel() : closeHostPanel()
+});
+
+closePanelButton.addEventListener('click', () => {
+  hostPanel.classList.toggle('open');
+  closeHostPanel();
+});
+
+const openHostPanel = async () => {
+  // Get the empty participants list
+  const participants = document.getElementById('participants');
+
+  videoRoom.participants.forEach(participant => {
+    const participantDetails = document.createElement('li');
+    participantDetails.classList.add('participantDetails')
+
+    participantDetails.setAttribute('data-sid', participant.sid);
+    participantDetails.innerText = participant.identity;
+
+    const participantDeleteButton = document.createElement('button');
+    participantDeleteButton.innerText = 'Remove';
+    participantDetails.appendChild(participantDeleteButton);
+    participantDeleteButton.addEventListener('click', removeParticipant);
+
+    participants.appendChild(participantDetails);
+  })
+
+  hostPanel.appendChild(participants);
+}
+
+const removeParticipant = async (event) => {
+  event.preventDefault();
+
+  try {
+    const response = await fetch('/removeParticipant', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        'roomSid': videoRoom.sid,
+        'participantSid': event.target.parentElement.dataset.sid
+      })
+    });
+
+    const data = await response.json();
+    const participantDetails = Array.from(document.getElementsByClassName('participantDetails'));
+    participantDetails.find(participant => participant.dataset.sid === data.removedSid).remove();
+
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+const closeHostPanel = () => {
+  const participants = document.getElementById('participants');
+
+  if (participants.children) {
+    for (child of participants.children) { child.remove() };
+  }
+}

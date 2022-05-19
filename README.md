@@ -12,3 +12,6 @@ A serverless video chat application built with Twilio Programmable Video.
 - Run `npm install` to install dependencies.
 - To run the server locally, run `npm start`.
 - To deploy on Twilio Functions, run the command `npm run deploy`. Once you deploy, the application will be available at a URL with the format `https://video-chat-serverless-XXXX-dev.twil.io`.
+
+## Reference
+- [How to Remove a Participant From a Twilio Video Call](https://www.twilio.com/blog/remove-participant-twilio-video-call)
